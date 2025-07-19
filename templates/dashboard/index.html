@@ -1,0 +1,468 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Crypto Trading Platform{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">
+        <i class="fas fa-tachometer-alt me-2"></i>
+        Trading Dashboard
+    </h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-outline-secondary" onclick="refreshAllData()">
+                <i class="fas fa-sync-alt"></i>
+                Refresh
+            </button>
+        </div>
+        <div class="btn-group me-2">
+            <button type="button" class="btn btn-sm btn-success" onclick="location.href='{{ url_for('trading.manual_order') }}'">
+                <i class="fas fa-plus"></i>
+                New Order
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Overview Cards -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-primary shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
+                            Total Coins
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="total-coins">
+                            {{ total_coins or 0 }}
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-coins fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-success shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+                            Open Positions
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="open-positions">
+                            {{ open_positions_count or 0 }}
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-briefcase fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-info shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+                            Pending Orders
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="pending-orders">
+                            {{ pending_orders_count or 0 }}
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-list-alt fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-warning shadow h-100 py-2">
+            <div class="card-body">
+                <div class="row no-gutters align-items-center">
+                    <div class="col mr-2">
+                        <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
+                            Portfolio Value
+                        </div>
+                        <div class="h5 mb-0 font-weight-bold text-gray-800" id="portfolio-value">
+                            ${{ "%.2f"|format(total_portfolio_value or 0) }}
+                        </div>
+                    </div>
+                    <div class="col-auto">
+                        <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts and Data Row -->
+<div class="row">
+    <!-- Trading Signals -->
+    <div class="col-lg-8 mb-4">
+        <div class="card shadow">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-chart-line me-2"></i>
+                    Latest Trading Signals
+                </h6>
+                <button class="btn btn-sm btn-outline-primary" onclick="refreshSignals()">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+            <div class="card-body" id="signals-container">
+                <div class="loading">
+                    <div class="spinner-border spinner-border-sm" role="status"></div>
+                    Loading signals...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Performance Summary -->
+    <div class="col-lg-4 mb-4">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-chart-bar me-2"></i>
+                    Performance (30 days)
+                </h6>
+            </div>
+            <div class="card-body" id="performance-container">
+                <div class="loading">
+                    <div class="spinner-border spinner-border-sm" role="status"></div>
+                    Loading performance...
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="row">
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-history me-2"></i>
+                    Recent System Logs
+                </h6>
+            </div>
+            <div class="card-body" id="logs-container">
+                <div class="loading">
+                    <div class="spinner-border spinner-border-sm" role="status"></div>
+                    Loading logs...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6 mb-4">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-wallet me-2"></i>
+                    Account Balance
+                </h6>
+            </div>
+            <div class="card-body" id="balance-container">
+                <div class="loading">
+                    <div class="spinner-border spinner-border-sm" role="status"></div>
+                    Loading balance...
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+    .border-left-primary {
+        border-left: 0.25rem solid var(--primary-color) !important;
+    }
+    .border-left-success {
+        border-left: 0.25rem solid var(--secondary-color) !important;
+    }
+    .border-left-info {
+        border-left: 0.25rem solid #36b9cc !important;
+    }
+    .border-left-warning {
+        border-left: 0.25rem solid var(--warning-color) !important;
+    }
+    
+    .signal-badge {
+        font-size: 0.875rem;
+        font-weight: 600;
+    }
+    
+    .signal-strength {
+        display: inline-flex;
+        align-items: center;
+    }
+    
+    .signal-strength .star {
+        color: #ddd;
+        margin-right: 2px;
+    }
+    
+    .signal-strength .star.active {
+        color: #ffc107;
+    }
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let refreshInterval;
+    
+    // Start auto-refresh when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        refreshAllData();
+        refreshInterval = setInterval(refreshAllData, 30000); // Refresh every 30 seconds
+    });
+    
+    function refreshAllData() {
+        refreshOverview();
+        refreshSignals();
+        refreshPerformance();
+        refreshLogs();
+        refreshBalance();
+    }
+    
+    function refreshOverview() {
+        fetch('/dashboard/api/overview')
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    document.getElementById('total-coins').textContent = data.data.total_coins;
+                    document.getElementById('open-positions').textContent = data.data.open_positions;
+                    document.getElementById('pending-orders').textContent = data.data.pending_orders;
+                    document.getElementById('portfolio-value').textContent = formatCurrency(data.data.total_portfolio_value);
+                }
+            })
+            .catch(error => console.error('Error refreshing overview:', error));
+    }
+    
+    function refreshSignals() {
+        showLoading('signals-container');
+        
+        fetch('/dashboard/api/signals')
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    displaySignals(data.data);
+                } else {
+                    showError('signals-container', 'Error loading signals');
+                }
+            })
+            .catch(error => {
+                console.error('Error refreshing signals:', error);
+                showError('signals-container', 'Error loading signals');
+            });
+    }
+    
+    function displaySignals(signals) {
+        const container = document.getElementById('signals-container');
+        
+        if (signals.length === 0) {
+            container.innerHTML = '<div class="text-center text-muted">No trading signals available</div>';
+            return;
+        }
+        
+        let html = '<div class="table-responsive"><table class="table table-hover"><thead><tr>';
+        html += '<th>Coin</th><th>Price</th><th>RSI</th><th>Action</th><th>Strength</th><th>Updated</th>';
+        html += '</tr></thead><tbody>';
+        
+        signals.slice(0, 10).forEach(signal => {
+            const actionClass = signal.action === 'BUY' ? 'success' : signal.action === 'SELL' ? 'danger' : 'secondary';
+            const timeAgo = new Date(signal.timestamp).toLocaleString();
+            
+            html += `<tr>
+                <td><strong>${signal.coin_name}</strong></td>
+                <td>$${formatNumber(signal.last_price, 8)}</td>
+                <td>${formatNumber(signal.rsi, 2)}</td>
+                <td><span class="badge bg-${actionClass}">${signal.action}</span></td>
+                <td>${generateStars(signal.signal_strength)}</td>
+                <td><small class="text-muted">${timeAgo}</small></td>
+            </tr>`;
+        });
+        
+        html += '</tbody></table></div>';
+        container.innerHTML = html;
+    }
+    
+    function generateStars(strength) {
+        let stars = '<div class="signal-strength">';
+        for (let i = 1; i <= 5; i++) {
+            const activeClass = i <= strength ? 'active' : '';
+            stars += `<span class="star ${activeClass}">★</span>`;
+        }
+        stars += '</div>';
+        return stars;
+    }
+    
+    function refreshPerformance() {
+        showLoading('performance-container');
+        
+        fetch('/dashboard/api/performance')
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    displayPerformance(data.data.performance_30d);
+                } else {
+                    showError('performance-container', 'Error loading performance');
+                }
+            })
+            .catch(error => {
+                console.error('Error refreshing performance:', error);
+                showError('performance-container', 'Error loading performance');
+            });
+    }
+    
+    function displayPerformance(performance) {
+        const container = document.getElementById('performance-container');
+        const pnlClass = performance.total_pnl >= 0 ? 'success' : 'danger';
+        const pnlIcon = performance.total_pnl >= 0 ? 'fa-arrow-up' : 'fa-arrow-down';
+        
+        const html = `
+            <div class="row">
+                <div class="col-12 mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span>Total Trades:</span>
+                        <strong>${performance.total_trades}</strong>
+                    </div>
+                </div>
+                <div class="col-12 mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span>Win Rate:</span>
+                        <strong class="text-${performance.win_rate >= 50 ? 'success' : 'danger'}">
+                            ${formatNumber(performance.win_rate, 1)}%
+                        </strong>
+                    </div>
+                </div>
+                <div class="col-12 mb-3">
+                    <div class="d-flex justify-content-between">
+                        <span>Total P&L:</span>
+                        <strong class="text-${pnlClass}">
+                            <i class="fas ${pnlIcon} me-1"></i>
+                            ${formatCurrency(performance.total_pnl)}
+                        </strong>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="d-flex justify-content-between">
+                        <span>Winning Trades:</span>
+                        <strong class="text-success">${performance.winning_trades}</strong>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        container.innerHTML = html;
+    }
+    
+    function refreshLogs() {
+        showLoading('logs-container');
+        
+        fetch('/dashboard/api/system-logs?per_page=5')
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    displayLogs(data.data.logs);
+                } else {
+                    showError('logs-container', 'Error loading logs');
+                }
+            })
+            .catch(error => {
+                console.error('Error refreshing logs:', error);
+                showError('logs-container', 'Error loading logs');
+            });
+    }
+    
+    function displayLogs(logs) {
+        const container = document.getElementById('logs-container');
+        
+        if (logs.length === 0) {
+            container.innerHTML = '<div class="text-center text-muted">No recent logs</div>';
+            return;
+        }
+        
+        let html = '';
+        logs.forEach(log => {
+            const levelClass = {
+                'INFO': 'primary',
+                'WARNING': 'warning',
+                'ERROR': 'danger',
+                'CRITICAL': 'danger'
+            }[log.level] || 'secondary';
+            
+            const timeAgo = new Date(log.timestamp).toLocaleString();
+            
+            html += `
+                <div class="d-flex align-items-start mb-2">
+                    <span class="badge bg-${levelClass} me-2">${log.level}</span>
+                    <div class="flex-grow-1">
+                        <div class="small">${log.message}</div>
+                        <small class="text-muted">${timeAgo}</small>
+                    </div>
+                </div>
+            `;
+        });
+        
+        container.innerHTML = html;
+    }
+    
+    function refreshBalance() {
+        showLoading('balance-container');
+        
+        fetch('/dashboard/api/account-balance')
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    displayBalance(data.data);
+                } else {
+                    document.getElementById('balance-container').innerHTML = 
+                        '<div class="text-center text-muted">API not configured</div>';
+                }
+            })
+            .catch(error => {
+                console.error('Error refreshing balance:', error);
+                document.getElementById('balance-container').innerHTML = 
+                    '<div class="text-center text-muted">Balance unavailable</div>';
+            });
+    }
+    
+    function displayBalance(balances) {
+        const container = document.getElementById('balance-container');
+        
+        if (balances.length === 0) {
+            container.innerHTML = '<div class="text-center text-muted">No balances found</div>';
+            return;
+        }
+        
+        let html = '';
+        balances.slice(0, 5).forEach(balance => {
+            html += `
+                <div class="d-flex justify-content-between mb-2">
+                    <span><strong>${balance.currency}</strong></span>
+                    <span>${formatNumber(balance.available, 4)}</span>
+                </div>
+            `;
+        });
+        
+        container.innerHTML = html;
+    }
+</script>
+{% endblock %} 

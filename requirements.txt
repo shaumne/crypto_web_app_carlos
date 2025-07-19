@@ -1,0 +1,27 @@
+Flask==2.3.3
+Flask-SQLAlchemy==3.0.5
+Flask-Login==0.6.3
+Werkzeug==2.3.7
+SQLAlchemy==2.0.21
+
+# Crypto and API libraries
+requests==2.31.0
+ccxt==4.1.12
+numpy==1.24.3
+pandas==2.0.3
+
+# Environment and configuration
+python-dotenv==1.0.0
+
+# Date and time handling
+python-dateutil==2.8.2
+
+# Cryptography for API signatures
+cryptography==41.0.4
+
+# Development and debugging
+Jinja2==3.1.2
+
+# Database (SQLite by default, but can be changed)
+# If using PostgreSQL: psycopg2-binary==2.9.7
+# If using MySQL: PyMySQL==1.1.0 

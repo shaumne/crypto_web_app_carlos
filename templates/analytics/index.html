@@ -1,0 +1,793 @@
+{% extends "base.html" %}
+
+{% block title %}Analytics - Crypto Trading Platform{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2 class="h3 mb-0 text-primary">
+                    <i class="fas fa-chart-bar me-2"></i>Analytics & Reports
+                </h2>
+                <div class="d-flex gap-2">
+                    <select class="form-select" id="timeRangeSelect" style="width: auto;">
+                        <option value="7">Last 7 Days</option>
+                        <option value="30" selected>Last 30 Days</option>
+                        <option value="90">Last 90 Days</option>
+                        <option value="365">Last Year</option>
+                        <option value="all">All Time</option>
+                    </select>
+                    <button class="btn btn-success" onclick="refreshAnalytics()">
+                        <i class="fas fa-sync-alt me-1"></i>Refresh
+                    </button>
+                    <button class="btn btn-info" onclick="exportReport()">
+                        <i class="fas fa-download me-1"></i>Export Report
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Key Performance Indicators -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="p-3 bg-success bg-opacity-10 rounded-3">
+                                <i class="fas fa-chart-line fa-lg text-success"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="text-muted mb-1">Total P&L</h6>
+                            <h4 class="mb-0" id="totalPnl">$0.00</h4>
+                            <small class="text-muted" id="pnlChange">+0.00% from last period</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="p-3 bg-primary bg-opacity-10 rounded-3">
+                                <i class="fas fa-percentage fa-lg text-primary"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="text-muted mb-1">Win Rate</h6>
+                            <h4 class="mb-0" id="winRate">0%</h4>
+                            <small class="text-muted" id="winRateDetail">0/0 trades</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="p-3 bg-info bg-opacity-10 rounded-3">
+                                <i class="fas fa-coins fa-lg text-info"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="text-muted mb-1">Avg Trade Size</h6>
+                            <h4 class="mb-0" id="avgTradeSize">$0.00</h4>
+                            <small class="text-muted" id="totalTrades">0 total trades</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="p-3 bg-warning bg-opacity-10 rounded-3">
+                                <i class="fas fa-chart-area fa-lg text-warning"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="text-muted mb-1">Sharpe Ratio</h6>
+                            <h4 class="mb-0" id="sharpeRatio">0.00</h4>
+                            <small class="text-muted">Risk-adjusted return</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row mb-4">
+        <!-- P&L Chart -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0">Portfolio Performance</h5>
+                        <div class="btn-group btn-group-sm" role="group">
+                            <input type="radio" class="btn-check" name="chartType" id="pnlChart" checked>
+                            <label class="btn btn-outline-primary" for="pnlChart">P&L</label>
+                            <input type="radio" class="btn-check" name="chartType" id="portfolioChart">
+                            <label class="btn btn-outline-primary" for="portfolioChart">Portfolio</label>
+                            <input type="radio" class="btn-check" name="chartType" id="volumeChart">
+                            <label class="btn btn-outline-primary" for="volumeChart">Volume</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <canvas id="performanceChart" height="400"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Asset Allocation -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Asset Allocation</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="allocationChart" height="400"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Detailed Analytics Tabs -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white border-bottom-0">
+            <ul class="nav nav-tabs card-header-tabs" id="analyticsTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="performance-tab" data-bs-toggle="tab" data-bs-target="#performance-pane" type="button" role="tab">
+                        <i class="fas fa-chart-line me-1"></i>Performance
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="trades-tab" data-bs-toggle="tab" data-bs-target="#trades-pane" type="button" role="tab">
+                        <i class="fas fa-exchange-alt me-1"></i>Trade Analysis
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="signals-tab" data-bs-toggle="tab" data-bs-target="#signals-pane" type="button" role="tab">
+                        <i class="fas fa-bell me-1"></i>Signal Performance
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="risk-tab" data-bs-toggle="tab" data-bs-target="#risk-pane" type="button" role="tab">
+                        <i class="fas fa-shield-alt me-1"></i>Risk Analysis
+                    </button>
+                </li>
+            </ul>
+        </div>
+        <div class="card-body">
+            <div class="tab-content" id="analyticsTabsContent">
+                <!-- Performance Tab -->
+                <div class="tab-pane fade show active" id="performance-pane" role="tabpanel">
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <h6>Return Metrics</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <tbody>
+                                        <tr>
+                                            <td>Total Return</td>
+                                            <td class="text-end fw-bold" id="totalReturn">$0.00</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Total Return %</td>
+                                            <td class="text-end fw-bold" id="totalReturnPercent">0.00%</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Annualized Return</td>
+                                            <td class="text-end fw-bold" id="annualizedReturn">0.00%</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Max Drawdown</td>
+                                            <td class="text-end fw-bold text-danger" id="maxDrawdown">0.00%</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Volatility</td>
+                                            <td class="text-end fw-bold" id="volatility">0.00%</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Sharpe Ratio</td>
+                                            <td class="text-end fw-bold" id="sharpeRatioDetail">0.00</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <h6>Trading Metrics</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <tbody>
+                                        <tr>
+                                            <td>Total Trades</td>
+                                            <td class="text-end fw-bold" id="totalTradesDetail">0</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Winning Trades</td>
+                                            <td class="text-end fw-bold text-success" id="winningTrades">0</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Losing Trades</td>
+                                            <td class="text-end fw-bold text-danger" id="losingTrades">0</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Average Win</td>
+                                            <td class="text-end fw-bold text-success" id="avgWin">$0.00</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Average Loss</td>
+                                            <td class="text-end fw-bold text-danger" id="avgLoss">$0.00</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Profit Factor</td>
+                                            <td class="text-end fw-bold" id="profitFactor">0.00</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Trade Analysis Tab -->
+                <div class="tab-pane fade" id="trades-pane" role="tabpanel">
+                    <div class="row mb-4">
+                        <div class="col-lg-6">
+                            <h6>Trade Distribution</h6>
+                            <canvas id="tradeDistributionChart" height="300"></canvas>
+                        </div>
+                        <div class="col-lg-6">
+                            <h6>Monthly Performance</h6>
+                            <canvas id="monthlyPerformanceChart" height="300"></canvas>
+                        </div>
+                    </div>
+                    
+                    <h6>Top Performing Assets</h6>
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="topAssetsTable">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Symbol</th>
+                                    <th>Trades</th>
+                                    <th>Win Rate</th>
+                                    <th>Total P&L</th>
+                                    <th>Avg P&L</th>
+                                </tr>
+                            </thead>
+                            <tbody id="topAssetsBody">
+                                <tr><td colspan="5" class="text-center text-muted">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Signal Performance Tab -->
+                <div class="tab-pane fade" id="signals-pane" role="tabpanel">
+                    <div class="row mb-4">
+                        <div class="col-lg-8">
+                            <h6>Signal Accuracy Over Time</h6>
+                            <canvas id="signalAccuracyChart" height="300"></canvas>
+                        </div>
+                        <div class="col-lg-4">
+                            <h6>Signal Type Distribution</h6>
+                            <canvas id="signalTypeChart" height="300"></canvas>
+                        </div>
+                    </div>
+                    
+                    <h6>Signal Performance Summary</h6>
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Signal Type</th>
+                                    <th>Total Signals</th>
+                                    <th>Executed</th>
+                                    <th>Success Rate</th>
+                                    <th>Avg Return</th>
+                                </tr>
+                            </thead>
+                            <tbody id="signalPerformanceBody">
+                                <tr><td colspan="5" class="text-center text-muted">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Risk Analysis Tab -->
+                <div class="tab-pane fade" id="risk-pane" role="tabpanel">
+                    <div class="row">
+                        <div class="col-lg-6">
+                            <h6>Risk Metrics</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <tbody>
+                                        <tr>
+                                            <td>Portfolio Beta</td>
+                                            <td class="text-end fw-bold" id="portfolioBeta">0.00</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Value at Risk (95%)</td>
+                                            <td class="text-end fw-bold text-danger" id="valueAtRisk">$0.00</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Expected Shortfall</td>
+                                            <td class="text-end fw-bold text-danger" id="expectedShortfall">$0.00</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Maximum Consecutive Losses</td>
+                                            <td class="text-end fw-bold" id="maxConsecutiveLosses">0</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Current Drawdown</td>
+                                            <td class="text-end fw-bold" id="currentDrawdown">0.00%</td>
+                                        </tr>
+                                        <tr>
+                                            <td>Recovery Factor</td>
+                                            <td class="text-end fw-bold" id="recoveryFactor">0.00</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div class="col-lg-6">
+                            <h6>Position Sizing</h6>
+                            <canvas id="positionSizingChart" height="300"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h6>Drawdown Analysis</h6>
+                            <canvas id="drawdownChart" height="200"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let performanceChart, allocationChart, tradeDistributionChart, monthlyPerformanceChart;
+let signalAccuracyChart, signalTypeChart, positionSizingChart, drawdownChart;
+
+document.addEventListener('DOMContentLoaded', function() {
+    initializeCharts();
+    loadAnalytics();
+    
+    // Time range selector
+    document.getElementById('timeRangeSelect').addEventListener('change', function() {
+        loadAnalytics();
+    });
+    
+    // Chart type selector
+    document.querySelectorAll('input[name="chartType"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            updatePerformanceChart(this.id);
+        });
+    });
+});
+
+function initializeCharts() {
+    const ctx1 = document.getElementById('performanceChart').getContext('2d');
+    performanceChart = new Chart(ctx1, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Cumulative P&L',
+                data: [],
+                borderColor: 'rgb(75, 192, 192)',
+                backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                tension: 0.1,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: false,
+                    grid: {
+                        color: 'rgba(0,0,0,0.1)'
+                    }
+                },
+                x: {
+                    grid: {
+                        color: 'rgba(0,0,0,0.1)'
+                    }
+                }
+            }
+        }
+    });
+
+    const ctx2 = document.getElementById('allocationChart').getContext('2d');
+    allocationChart = new Chart(ctx2, {
+        type: 'doughnut',
+        data: {
+            labels: [],
+            datasets: [{
+                data: [],
+                backgroundColor: [
+                    '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0',
+                    '#9966FF', '#FF9F40', '#FF6384', '#C9CBCF'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+
+    const ctx3 = document.getElementById('tradeDistributionChart').getContext('2d');
+    tradeDistributionChart = new Chart(ctx3, {
+        type: 'bar',
+        data: {
+            labels: ['Profit', 'Loss'],
+            datasets: [{
+                label: 'Number of Trades',
+                data: [0, 0],
+                backgroundColor: ['rgba(75, 192, 192, 0.8)', 'rgba(255, 99, 132, 0.8)']
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+
+    const ctx4 = document.getElementById('monthlyPerformanceChart').getContext('2d');
+    monthlyPerformanceChart = new Chart(ctx4, {
+        type: 'bar',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Monthly P&L',
+                data: [],
+                backgroundColor: function(context) {
+                    const value = context.parsed.y;
+                    return value >= 0 ? 'rgba(75, 192, 192, 0.8)' : 'rgba(255, 99, 132, 0.8)';
+                }
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+
+    // Initialize other charts
+    initializeSignalCharts();
+    initializeRiskCharts();
+}
+
+function initializeSignalCharts() {
+    const ctx5 = document.getElementById('signalAccuracyChart').getContext('2d');
+    signalAccuracyChart = new Chart(ctx5, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Signal Accuracy %',
+                data: [],
+                borderColor: 'rgb(54, 162, 235)',
+                backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100
+                }
+            }
+        }
+    });
+
+    const ctx6 = document.getElementById('signalTypeChart').getContext('2d');
+    signalTypeChart = new Chart(ctx6, {
+        type: 'pie',
+        data: {
+            labels: ['STRONG_BUY', 'BUY', 'HOLD', 'SELL', 'STRONG_SELL'],
+            datasets: [{
+                data: [0, 0, 0, 0, 0],
+                backgroundColor: [
+                    '#28a745', '#17a2b8', '#ffc107', '#fd7e14', '#dc3545'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false
+        }
+    });
+}
+
+function initializeRiskCharts() {
+    const ctx7 = document.getElementById('positionSizingChart').getContext('2d');
+    positionSizingChart = new Chart(ctx7, {
+        type: 'scatter',
+        data: {
+            datasets: [{
+                label: 'Position Size vs P&L',
+                data: [],
+                backgroundColor: 'rgba(255, 99, 132, 0.6)'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Position Size ($)'
+                    }
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: 'P&L ($)'
+                    }
+                }
+            }
+        }
+    });
+
+    const ctx8 = document.getElementById('drawdownChart').getContext('2d');
+    drawdownChart = new Chart(ctx8, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Drawdown %',
+                data: [],
+                borderColor: 'rgb(255, 99, 132)',
+                backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    max: 0,
+                    grid: {
+                        color: 'rgba(255, 99, 132, 0.3)'
+                    }
+                }
+            }
+        }
+    });
+}
+
+function loadAnalytics() {
+    const timeRange = document.getElementById('timeRangeSelect').value;
+    
+    Promise.all([
+        fetch(`/api/analytics/performance?days=${timeRange}`).then(r => r.json()),
+        fetch(`/api/analytics/allocation`).then(r => r.json()),
+        fetch(`/api/analytics/trade-analysis?days=${timeRange}`).then(r => r.json()),
+        fetch(`/api/analytics/signal-performance?days=${timeRange}`).then(r => r.json()),
+        fetch(`/api/analytics/risk-metrics?days=${timeRange}`).then(r => r.json())
+    ])
+    .then(([performance, allocation, trades, signals, risk]) => {
+        updateKPIs(performance);
+        updatePerformanceChart('pnlChart', performance);
+        updateAllocationChart(allocation);
+        updateTradeAnalysis(trades);
+        updateSignalAnalysis(signals);
+        updateRiskAnalysis(risk);
+    })
+    .catch(error => {
+        console.error('Error loading analytics:', error);
+        showAlert('Error loading analytics data', 'danger');
+    });
+}
+
+function updateKPIs(data) {
+    document.getElementById('totalPnl').textContent = formatCurrency(data.total_pnl || 0);
+    document.getElementById('totalPnl').className = `mb-0 ${(data.total_pnl || 0) >= 0 ? 'text-success' : 'text-danger'}`;
+    
+    document.getElementById('pnlChange').textContent = `${data.pnl_change >= 0 ? '+' : ''}${formatNumber(data.pnl_change || 0, 2)}% from last period`;
+    
+    document.getElementById('winRate').textContent = formatNumber(data.win_rate || 0, 1) + '%';
+    document.getElementById('winRateDetail').textContent = `${data.winning_trades || 0}/${data.total_trades || 0} trades`;
+    
+    document.getElementById('avgTradeSize').textContent = formatCurrency(data.avg_trade_size || 0);
+    document.getElementById('totalTrades').textContent = `${data.total_trades || 0} total trades`;
+    
+    document.getElementById('sharpeRatio').textContent = formatNumber(data.sharpe_ratio || 0, 2);
+}
+
+function updatePerformanceChart(chartType, data = null) {
+    if (!data) return;
+    
+    let chartData, label, color;
+    
+    switch(chartType) {
+        case 'portfolioChart':
+            chartData = data.portfolio_values || [];
+            label = 'Portfolio Value';
+            color = 'rgb(54, 162, 235)';
+            break;
+        case 'volumeChart':
+            chartData = data.daily_volume || [];
+            label = 'Daily Volume';
+            color = 'rgb(255, 159, 64)';
+            break;
+        default:
+            chartData = data.cumulative_pnl || [];
+            label = 'Cumulative P&L';
+            color = 'rgb(75, 192, 192)';
+    }
+    
+    performanceChart.data.labels = data.dates || [];
+    performanceChart.data.datasets[0].data = chartData;
+    performanceChart.data.datasets[0].label = label;
+    performanceChart.data.datasets[0].borderColor = color;
+    performanceChart.data.datasets[0].backgroundColor = color.replace('rgb', 'rgba').replace(')', ', 0.1)');
+    performanceChart.update();
+}
+
+function updateAllocationChart(data) {
+    allocationChart.data.labels = data.symbols || [];
+    allocationChart.data.datasets[0].data = data.values || [];
+    allocationChart.update();
+}
+
+function updateTradeAnalysis(data) {
+    // Update performance metrics
+    document.getElementById('totalReturn').textContent = formatCurrency(data.total_return || 0);
+    document.getElementById('totalReturnPercent').textContent = formatNumber(data.total_return_percent || 0, 2) + '%';
+    document.getElementById('annualizedReturn').textContent = formatNumber(data.annualized_return || 0, 2) + '%';
+    document.getElementById('maxDrawdown').textContent = formatNumber(data.max_drawdown || 0, 2) + '%';
+    document.getElementById('volatility').textContent = formatNumber(data.volatility || 0, 2) + '%';
+    document.getElementById('sharpeRatioDetail').textContent = formatNumber(data.sharpe_ratio || 0, 2);
+    
+    // Update trading metrics
+    document.getElementById('totalTradesDetail').textContent = data.total_trades || 0;
+    document.getElementById('winningTrades').textContent = data.winning_trades || 0;
+    document.getElementById('losingTrades').textContent = data.losing_trades || 0;
+    document.getElementById('avgWin').textContent = formatCurrency(data.avg_win || 0);
+    document.getElementById('avgLoss').textContent = formatCurrency(Math.abs(data.avg_loss || 0));
+    document.getElementById('profitFactor').textContent = formatNumber(data.profit_factor || 0, 2);
+    
+    // Update charts
+    tradeDistributionChart.data.datasets[0].data = [data.winning_trades || 0, data.losing_trades || 0];
+    tradeDistributionChart.update();
+    
+    monthlyPerformanceChart.data.labels = data.monthly_labels || [];
+    monthlyPerformanceChart.data.datasets[0].data = data.monthly_pnl || [];
+    monthlyPerformanceChart.update();
+    
+    // Update top assets table
+    updateTopAssetsTable(data.top_assets || []);
+}
+
+function updateTopAssetsTable(assets) {
+    const tbody = document.getElementById('topAssetsBody');
+    if (assets.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No data available</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = assets.map(asset => `
+        <tr>
+            <td><strong>${asset.symbol}</strong></td>
+            <td>${asset.trades}</td>
+            <td>${formatNumber(asset.win_rate, 1)}%</td>
+            <td class="${asset.total_pnl >= 0 ? 'text-success' : 'text-danger'}">
+                ${formatCurrency(asset.total_pnl)}
+            </td>
+            <td class="${asset.avg_pnl >= 0 ? 'text-success' : 'text-danger'}">
+                ${formatCurrency(asset.avg_pnl)}
+            </td>
+        </tr>
+    `).join('');
+}
+
+function updateSignalAnalysis(data) {
+    signalAccuracyChart.data.labels = data.dates || [];
+    signalAccuracyChart.data.datasets[0].data = data.accuracy_over_time || [];
+    signalAccuracyChart.update();
+    
+    signalTypeChart.data.datasets[0].data = data.signal_distribution || [0, 0, 0, 0, 0];
+    signalTypeChart.update();
+    
+    // Update signal performance table
+    const tbody = document.getElementById('signalPerformanceBody');
+    const signals = data.signal_performance || [];
+    
+    if (signals.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No signal data available</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = signals.map(signal => `
+        <tr>
+            <td><span class="badge bg-${getSignalBadgeColor(signal.type)}">${signal.type}</span></td>
+            <td>${signal.total_signals}</td>
+            <td>${signal.executed}</td>
+            <td>${formatNumber(signal.success_rate, 1)}%</td>
+            <td class="${signal.avg_return >= 0 ? 'text-success' : 'text-danger'}">
+                ${formatNumber(signal.avg_return, 2)}%
+            </td>
+        </tr>
+    `).join('');
+}
+
+function updateRiskAnalysis(data) {
+    document.getElementById('portfolioBeta').textContent = formatNumber(data.portfolio_beta || 0, 2);
+    document.getElementById('valueAtRisk').textContent = formatCurrency(data.value_at_risk || 0);
+    document.getElementById('expectedShortfall').textContent = formatCurrency(data.expected_shortfall || 0);
+    document.getElementById('maxConsecutiveLosses').textContent = data.max_consecutive_losses || 0;
+    document.getElementById('currentDrawdown').textContent = formatNumber(data.current_drawdown || 0, 2) + '%';
+    document.getElementById('recoveryFactor').textContent = formatNumber(data.recovery_factor || 0, 2);
+    
+    // Update charts
+    positionSizingChart.data.datasets[0].data = data.position_size_vs_pnl || [];
+    positionSizingChart.update();
+    
+    drawdownChart.data.labels = data.dates || [];
+    drawdownChart.data.datasets[0].data = data.drawdown_series || [];
+    drawdownChart.update();
+}
+
+function getSignalBadgeColor(signal) {
+    switch(signal) {
+        case 'STRONG_BUY': return 'success';
+        case 'BUY': return 'primary';
+        case 'SELL': return 'warning';
+        case 'STRONG_SELL': return 'danger';
+        default: return 'secondary';
+    }
+}
+
+function refreshAnalytics() {
+    loadAnalytics();
+    showAlert('Analytics data refreshed', 'success');
+}
+
+function exportReport() {
+    const timeRange = document.getElementById('timeRangeSelect').value;
+    window.open(`/api/analytics/export?days=${timeRange}`, '_blank');
+}
+</script>
+{% endblock %} 

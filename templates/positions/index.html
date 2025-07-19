@@ -1,0 +1,649 @@
+{% extends "base.html" %}
+
+{% block title %}Positions - Crypto Trading Platform{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2 class="h3 mb-0 text-primary">
+                    <i class="fas fa-briefcase me-2"></i>Positions
+                </h2>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-success" onclick="refreshPositions()">
+                        <i class="fas fa-sync-alt me-1"></i>Refresh
+                    </button>
+                    <button class="btn btn-info" onclick="exportPositions()">
+                        <i class="fas fa-download me-1"></i>Export
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="p-3 bg-primary bg-opacity-10 rounded-3">
+                                <i class="fas fa-layer-group fa-lg text-primary"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="text-muted mb-1">Total Positions</h6>
+                            <h4 class="mb-0" id="totalPositions">-</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="p-3 bg-success bg-opacity-10 rounded-3">
+                                <i class="fas fa-chart-line fa-lg text-success"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="text-muted mb-1">Total P&L</h6>
+                            <h4 class="mb-0" id="totalPnl">$0.00</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="p-3 bg-info bg-opacity-10 rounded-3">
+                                <i class="fas fa-money-bill-wave fa-lg text-info"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="text-muted mb-1">Portfolio Value</h6>
+                            <h4 class="mb-0" id="portfolioValue">$0.00</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="p-3 bg-warning bg-opacity-10 rounded-3">
+                                <i class="fas fa-percentage fa-lg text-warning"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="text-muted mb-1">Win Rate</h6>
+                            <h4 class="mb-0" id="winRate">-%</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters and Controls -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">Search</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                        <input type="text" class="form-control" id="positionSearch" placeholder="Search positions...">
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Status</label>
+                    <select class="form-select" id="statusFilter">
+                        <option value="">All Status</option>
+                        <option value="OPEN">Open</option>
+                        <option value="CLOSED">Closed</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Date Range</label>
+                    <select class="form-select" id="dateFilter">
+                        <option value="">All Time</option>
+                        <option value="today">Today</option>
+                        <option value="week">This Week</option>
+                        <option value="month">This Month</option>
+                        <option value="quarter">This Quarter</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">P&L Filter</label>
+                    <select class="form-select" id="pnlFilter">
+                        <option value="">All P&L</option>
+                        <option value="profit">Profitable</option>
+                        <option value="loss">Loss</option>
+                        <option value="breakeven">Break Even</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">&nbsp;</label>
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-primary flex-fill" onclick="applyFilters()">
+                            <i class="fas fa-filter me-1"></i>Filter
+                        </button>
+                        <button class="btn btn-outline-secondary" onclick="clearFilters()">
+                            <i class="fas fa-times me-1"></i>Clear
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Positions Table -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Position Details</h5>
+                <div class="btn-group btn-group-sm" role="group">
+                    <input type="radio" class="btn-check" name="viewMode" id="tableView" checked>
+                    <label class="btn btn-outline-primary" for="tableView">
+                        <i class="fas fa-table"></i> Table
+                    </label>
+                    <input type="radio" class="btn-check" name="viewMode" id="cardView">
+                    <label class="btn btn-outline-primary" for="cardView">
+                        <i class="fas fa-th-large"></i> Cards
+                    </label>
+                </div>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <!-- Table View -->
+            <div id="tableViewContent">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Symbol</th>
+                                <th>Quantity</th>
+                                <th>Entry Price</th>
+                                <th>Current Price</th>
+                                <th>Market Value</th>
+                                <th>P&L</th>
+                                <th>P&L %</th>
+                                <th>TP/SL</th>
+                                <th>Duration</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="positionsTableBody">
+                            <tr>
+                                <td colspan="11" class="text-center py-4">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                    <p class="mt-2 text-muted">Loading positions...</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Card View -->
+            <div id="cardViewContent" style="display: none;">
+                <div class="p-3">
+                    <div class="row" id="positionsCardContainer">
+                        <!-- Cards will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Position Details Modal -->
+<div class="modal fade" id="positionDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Position Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="positionDetailsContent">
+                <!-- Content will be populated dynamically -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-danger" id="closePositionBtn" onclick="closePosition()">
+                    <i class="fas fa-times me-1"></i>Close Position
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Update TP/SL Modal -->
+<div class="modal fade" id="updateTpSlModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Update Take Profit / Stop Loss</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="updateTpSlForm">
+                    <input type="hidden" id="updatePositionId">
+                    <div class="mb-3">
+                        <label class="form-label">Take Profit Price ($)</label>
+                        <input type="number" class="form-control" id="newTakeProfit" step="0.000001" placeholder="0.000000">
+                        <div class="form-text">Leave empty to remove take profit</div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Stop Loss Price ($)</label>
+                        <input type="number" class="form-control" id="newStopLoss" step="0.000001" placeholder="0.000000">
+                        <div class="form-text">Leave empty to remove stop loss</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="updateTpSl()">Update</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentPositions = [];
+let selectedPositionId = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadPositionsSummary();
+    loadPositions();
+    
+    // View mode toggle
+    document.querySelectorAll('input[name="viewMode"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            toggleViewMode(this.id === 'cardView');
+        });
+    });
+    
+    // Filter inputs
+    document.getElementById('positionSearch').addEventListener('input', applyFilters);
+    document.getElementById('statusFilter').addEventListener('change', applyFilters);
+    document.getElementById('dateFilter').addEventListener('change', applyFilters);
+    document.getElementById('pnlFilter').addEventListener('change', applyFilters);
+});
+
+function loadPositionsSummary() {
+    fetch('/api/positions/summary')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('totalPositions').textContent = data.total_positions || 0;
+            document.getElementById('totalPnl').textContent = formatCurrency(data.total_pnl || 0);
+            document.getElementById('totalPnl').className = `mb-0 ${(data.total_pnl || 0) >= 0 ? 'text-success' : 'text-danger'}`;
+            document.getElementById('portfolioValue').textContent = formatCurrency(data.portfolio_value || 0);
+            document.getElementById('winRate').textContent = formatNumber(data.win_rate || 0, 1) + '%';
+        })
+        .catch(error => console.error('Error loading positions summary:', error));
+}
+
+function loadPositions() {
+    fetch('/api/positions')
+        .then(response => response.json())
+        .then(data => {
+            currentPositions = data.positions || [];
+            displayPositions(currentPositions);
+        })
+        .catch(error => {
+            console.error('Error loading positions:', error);
+            document.getElementById('positionsTableBody').innerHTML = 
+                '<tr><td colspan="11" class="text-center text-danger">Error loading positions</td></tr>';
+        });
+}
+
+function displayPositions(positions) {
+    displayPositionsTable(positions);
+    displayPositionsCards(positions);
+}
+
+function displayPositionsTable(positions) {
+    const tbody = document.getElementById('positionsTableBody');
+    if (positions.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="11" class="text-center text-muted">No positions found</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = positions.map(position => {
+        const pnl = position.unrealized_pnl || 0;
+        const pnlPercent = position.pnl_percentage || 0;
+        const duration = calculateDuration(position.created_at);
+        
+        return `
+            <tr>
+                <td>
+                    <div class="d-flex align-items-center">
+                        <div class="me-2">
+                            <i class="fab fa-bitcoin text-warning"></i>
+                        </div>
+                        <div>
+                            <strong>${position.symbol}</strong>
+                            <br><small class="text-muted">${position.order_type || 'MARKET'}</small>
+                        </div>
+                    </div>
+                </td>
+                <td>${formatNumber(position.quantity, 6)}</td>
+                <td>$${formatNumber(position.entry_price, 6)}</td>
+                <td>$${formatNumber(position.current_price || position.entry_price, 6)}</td>
+                <td>$${formatNumber(position.market_value || 0, 2)}</td>
+                <td class="${pnl >= 0 ? 'text-success' : 'text-danger'}">
+                    ${pnl >= 0 ? '+' : ''}$${formatNumber(pnl, 2)}
+                </td>
+                <td class="${pnlPercent >= 0 ? 'text-success' : 'text-danger'}">
+                    ${pnlPercent >= 0 ? '+' : ''}${formatNumber(pnlPercent, 2)}%
+                </td>
+                <td>
+                    <small>
+                        ${position.take_profit ? `TP: $${formatNumber(position.take_profit, 6)}` : 'No TP'}<br>
+                        ${position.stop_loss ? `SL: $${formatNumber(position.stop_loss, 6)}` : 'No SL'}
+                    </small>
+                </td>
+                <td>${duration}</td>
+                <td>
+                    <span class="badge bg-${position.status === 'OPEN' ? 'success' : 'secondary'}">
+                        ${position.status}
+                    </span>
+                </td>
+                <td>
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-primary" onclick="showPositionDetails(${position.id})" title="Details">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        ${position.status === 'OPEN' ? `
+                            <button class="btn btn-outline-warning" onclick="showUpdateTpSl(${position.id})" title="Update TP/SL">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button class="btn btn-outline-danger" onclick="confirmClosePosition(${position.id})" title="Close">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        ` : ''}
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function displayPositionsCards(positions) {
+    const container = document.getElementById('positionsCardContainer');
+    if (positions.length === 0) {
+        container.innerHTML = '<div class="col-12 text-center text-muted">No positions found</div>';
+        return;
+    }
+    
+    container.innerHTML = positions.map(position => {
+        const pnl = position.unrealized_pnl || 0;
+        const pnlPercent = position.pnl_percentage || 0;
+        
+        return `
+            <div class="col-lg-4 col-md-6 mb-3">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-${position.status === 'OPEN' ? 'success' : 'secondary'} text-white">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0">${position.symbol}</h6>
+                            <span class="badge bg-light text-dark">${position.status}</span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <small class="text-muted">Quantity</small>
+                                <div class="fw-bold">${formatNumber(position.quantity, 6)}</div>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted">Entry Price</small>
+                                <div class="fw-bold">$${formatNumber(position.entry_price, 6)}</div>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted">Current Price</small>
+                                <div class="fw-bold">$${formatNumber(position.current_price || position.entry_price, 6)}</div>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted">Market Value</small>
+                                <div class="fw-bold">$${formatNumber(position.market_value || 0, 2)}</div>
+                            </div>
+                        </div>
+                        
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <small class="text-muted">P&L</small>
+                                <div class="fw-bold ${pnl >= 0 ? 'text-success' : 'text-danger'}">
+                                    ${pnl >= 0 ? '+' : ''}$${formatNumber(pnl, 2)}
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted">P&L %</small>
+                                <div class="fw-bold ${pnlPercent >= 0 ? 'text-success' : 'text-danger'}">
+                                    ${pnlPercent >= 0 ? '+' : ''}${formatNumber(pnlPercent, 2)}%
+                                </div>
+                            </div>
+                        </div>
+                        
+                        ${position.take_profit || position.stop_loss ? `
+                            <div class="mb-3">
+                                <small class="text-muted">Take Profit / Stop Loss</small>
+                                <div class="small">
+                                    ${position.take_profit ? `TP: $${formatNumber(position.take_profit, 6)}` : 'No TP'}<br>
+                                    ${position.stop_loss ? `SL: $${formatNumber(position.stop_loss, 6)}` : 'No SL'}
+                                </div>
+                            </div>
+                        ` : ''}
+                        
+                        <div class="d-flex justify-content-between">
+                            <button class="btn btn-sm btn-outline-primary" onclick="showPositionDetails(${position.id})">
+                                <i class="fas fa-eye me-1"></i>Details
+                            </button>
+                            ${position.status === 'OPEN' ? `
+                                <div class="btn-group btn-group-sm">
+                                    <button class="btn btn-outline-warning" onclick="showUpdateTpSl(${position.id})">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button class="btn btn-outline-danger" onclick="confirmClosePosition(${position.id})">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function toggleViewMode(isCardView) {
+    document.getElementById('tableViewContent').style.display = isCardView ? 'none' : 'block';
+    document.getElementById('cardViewContent').style.display = isCardView ? 'block' : 'none';
+}
+
+function applyFilters() {
+    const search = document.getElementById('positionSearch').value.toLowerCase();
+    const status = document.getElementById('statusFilter').value;
+    const dateRange = document.getElementById('dateFilter').value;
+    const pnlFilter = document.getElementById('pnlFilter').value;
+    
+    let filteredPositions = currentPositions.filter(position => {
+        // Search filter
+        const matchesSearch = position.symbol.toLowerCase().includes(search);
+        
+        // Status filter
+        const matchesStatus = !status || position.status === status;
+        
+        // Date filter
+        const matchesDate = !dateRange || isInDateRange(position.created_at, dateRange);
+        
+        // P&L filter
+        const pnl = position.unrealized_pnl || 0;
+        let matchesPnl = true;
+        if (pnlFilter === 'profit') matchesPnl = pnl > 0;
+        else if (pnlFilter === 'loss') matchesPnl = pnl < 0;
+        else if (pnlFilter === 'breakeven') matchesPnl = Math.abs(pnl) < 0.01;
+        
+        return matchesSearch && matchesStatus && matchesDate && matchesPnl;
+    });
+    
+    displayPositions(filteredPositions);
+}
+
+function clearFilters() {
+    document.getElementById('positionSearch').value = '';
+    document.getElementById('statusFilter').value = '';
+    document.getElementById('dateFilter').value = '';
+    document.getElementById('pnlFilter').value = '';
+    displayPositions(currentPositions);
+}
+
+function showPositionDetails(positionId) {
+    const position = currentPositions.find(p => p.id === positionId);
+    if (!position) return;
+    
+    const content = `
+        <div class="row g-3">
+            <div class="col-md-6">
+                <h6>Position Information</h6>
+                <table class="table table-sm">
+                    <tr><td>Symbol:</td><td><strong>${position.symbol}</strong></td></tr>
+                    <tr><td>Quantity:</td><td>${formatNumber(position.quantity, 6)}</td></tr>
+                    <tr><td>Entry Price:</td><td>$${formatNumber(position.entry_price, 6)}</td></tr>
+                    <tr><td>Current Price:</td><td>$${formatNumber(position.current_price || position.entry_price, 6)}</td></tr>
+                    <tr><td>Market Value:</td><td>$${formatNumber(position.market_value || 0, 2)}</td></tr>
+                    <tr><td>Status:</td><td><span class="badge bg-${position.status === 'OPEN' ? 'success' : 'secondary'}">${position.status}</span></td></tr>
+                </table>
+            </div>
+            <div class="col-md-6">
+                <h6>Profit & Loss</h6>
+                <table class="table table-sm">
+                    <tr><td>Unrealized P&L:</td><td class="${(position.unrealized_pnl || 0) >= 0 ? 'text-success' : 'text-danger'}">$${formatNumber(position.unrealized_pnl || 0, 2)}</td></tr>
+                    <tr><td>P&L Percentage:</td><td class="${(position.pnl_percentage || 0) >= 0 ? 'text-success' : 'text-danger'}">${formatNumber(position.pnl_percentage || 0, 2)}%</td></tr>
+                    <tr><td>Take Profit:</td><td>${position.take_profit ? '$' + formatNumber(position.take_profit, 6) : 'Not set'}</td></tr>
+                    <tr><td>Stop Loss:</td><td>${position.stop_loss ? '$' + formatNumber(position.stop_loss, 6) : 'Not set'}</td></tr>
+                </table>
+            </div>
+            <div class="col-12">
+                <h6>Timestamps</h6>
+                <table class="table table-sm">
+                    <tr><td>Created:</td><td>${formatDateTime(position.created_at)}</td></tr>
+                    <tr><td>Updated:</td><td>${formatDateTime(position.updated_at)}</td></tr>
+                    ${position.closed_at ? `<tr><td>Closed:</td><td>${formatDateTime(position.closed_at)}</td></tr>` : ''}
+                </table>
+            </div>
+        </div>
+    `;
+    
+    document.getElementById('positionDetailsContent').innerHTML = content;
+    document.getElementById('closePositionBtn').style.display = position.status === 'OPEN' ? 'block' : 'none';
+    selectedPositionId = positionId;
+    
+    new bootstrap.Modal(document.getElementById('positionDetailsModal')).show();
+}
+
+function showUpdateTpSl(positionId) {
+    const position = currentPositions.find(p => p.id === positionId);
+    if (!position) return;
+    
+    document.getElementById('updatePositionId').value = positionId;
+    document.getElementById('newTakeProfit').value = position.take_profit || '';
+    document.getElementById('newStopLoss').value = position.stop_loss || '';
+    
+    new bootstrap.Modal(document.getElementById('updateTpSlModal')).show();
+}
+
+function updateTpSl() {
+    const positionId = document.getElementById('updatePositionId').value;
+    const takeProfit = document.getElementById('newTakeProfit').value;
+    const stopLoss = document.getElementById('newStopLoss').value;
+    
+    const data = {};
+    if (takeProfit) data.take_profit = parseFloat(takeProfit);
+    if (stopLoss) data.stop_loss = parseFloat(stopLoss);
+    
+    fetch(`/api/positions/${positionId}/update-tp-sl`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('TP/SL updated successfully', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('updateTpSlModal')).hide();
+            loadPositions();
+        } else {
+            showAlert(data.message || 'Error updating TP/SL', 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error updating TP/SL:', error);
+        showAlert('Error updating TP/SL', 'danger');
+    });
+}
+
+function refreshPositions() {
+    loadPositionsSummary();
+    loadPositions();
+}
+
+function exportPositions() {
+    window.open('/api/positions/export', '_blank');
+}
+
+function calculateDuration(createdAt) {
+    const now = new Date();
+    const created = new Date(createdAt);
+    const diff = now - created;
+    
+    const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+    const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+    
+    if (days > 0) return `${days}d ${hours}h`;
+    if (hours > 0) return `${hours}h ${minutes}m`;
+    return `${minutes}m`;
+}
+
+function isInDateRange(dateStr, range) {
+    const date = new Date(dateStr);
+    const now = new Date();
+    
+    switch(range) {
+        case 'today':
+            return date.toDateString() === now.toDateString();
+        case 'week':
+            const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            return date >= weekAgo;
+        case 'month':
+            const monthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+            return date >= monthAgo;
+        case 'quarter':
+            const quarterAgo = new Date(now.getFullYear(), now.getMonth() - 3, now.getDate());
+            return date >= quarterAgo;
+        default:
+            return true;
+    }
+}
+
+function formatDateTime(dateStr) {
+    return new Date(dateStr).toLocaleString();
+}
+</script>
+{% endblock %} 

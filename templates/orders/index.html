@@ -1,0 +1,678 @@
+{% extends "base.html" %}
+
+{% block title %}Orders - Crypto Trading Platform{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <!-- Page Header -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="d-flex justify-content-between align-items-center">
+                <h2 class="h3 mb-0 text-primary">
+                    <i class="fas fa-list-alt me-2"></i>Orders
+                </h2>
+                <div class="d-flex gap-2">
+                    <button class="btn btn-success" onclick="refreshOrders()">
+                        <i class="fas fa-sync-alt me-1"></i>Refresh
+                    </button>
+                    <button class="btn btn-info" onclick="exportOrders()">
+                        <i class="fas fa-download me-1"></i>Export
+                    </button>
+                    <button class="btn btn-warning" onclick="cancelAllPending()">
+                        <i class="fas fa-ban me-1"></i>Cancel All Pending
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="p-3 bg-primary bg-opacity-10 rounded-3">
+                                <i class="fas fa-list-alt fa-lg text-primary"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="text-muted mb-1">Total Orders</h6>
+                            <h4 class="mb-0" id="totalOrders">-</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="p-3 bg-warning bg-opacity-10 rounded-3">
+                                <i class="fas fa-clock fa-lg text-warning"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="text-muted mb-1">Pending Orders</h6>
+                            <h4 class="mb-0" id="pendingOrders">-</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="p-3 bg-success bg-opacity-10 rounded-3">
+                                <i class="fas fa-check-circle fa-lg text-success"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="text-muted mb-1">Filled Orders</h6>
+                            <h4 class="mb-0" id="filledOrders">-</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6 mb-3">
+            <div class="card border-0 shadow-sm h-100">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0">
+                            <div class="p-3 bg-info bg-opacity-10 rounded-3">
+                                <i class="fas fa-dollar-sign fa-lg text-info"></i>
+                            </div>
+                        </div>
+                        <div class="flex-grow-1 ms-3">
+                            <h6 class="text-muted mb-1">Total Volume</h6>
+                            <h4 class="mb-0" id="totalVolume">$0.00</h4>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters and Controls -->
+    <div class="card border-0 shadow-sm mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-2">
+                    <label class="form-label">Search</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                        <input type="text" class="form-control" id="orderSearch" placeholder="Search orders...">
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Status</label>
+                    <select class="form-select" id="statusFilter">
+                        <option value="">All Status</option>
+                        <option value="PENDING">Pending</option>
+                        <option value="FILLED">Filled</option>
+                        <option value="PARTIALLY_FILLED">Partially Filled</option>
+                        <option value="CANCELLED">Cancelled</option>
+                        <option value="REJECTED">Rejected</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Order Type</label>
+                    <select class="form-select" id="typeFilter">
+                        <option value="">All Types</option>
+                        <option value="MARKET">Market</option>
+                        <option value="LIMIT">Limit</option>
+                        <option value="STOP_LOSS">Stop Loss</option>
+                        <option value="TAKE_PROFIT">Take Profit</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Side</label>
+                    <select class="form-select" id="sideFilter">
+                        <option value="">All Sides</option>
+                        <option value="BUY">Buy</option>
+                        <option value="SELL">Sell</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">Date Range</label>
+                    <select class="form-select" id="dateFilter">
+                        <option value="">All Time</option>
+                        <option value="today">Today</option>
+                        <option value="week">This Week</option>
+                        <option value="month">This Month</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label">&nbsp;</label>
+                    <div class="d-flex gap-1">
+                        <button class="btn btn-outline-primary flex-fill" onclick="applyFilters()">
+                            <i class="fas fa-filter"></i>
+                        </button>
+                        <button class="btn btn-outline-secondary" onclick="clearFilters()">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Orders Table -->
+    <div class="card border-0 shadow-sm">
+        <div class="card-header bg-white">
+            <div class="d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Order History</h5>
+                <div class="btn-group btn-group-sm" role="group">
+                    <input type="radio" class="btn-check" name="viewMode" id="tableView" checked>
+                    <label class="btn btn-outline-primary" for="tableView">
+                        <i class="fas fa-table"></i> Table
+                    </label>
+                    <input type="radio" class="btn-check" name="viewMode" id="cardView">
+                    <label class="btn btn-outline-primary" for="cardView">
+                        <i class="fas fa-th-large"></i> Cards
+                    </label>
+                </div>
+            </div>
+        </div>
+        <div class="card-body p-0">
+            <!-- Table View -->
+            <div id="tableViewContent">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Symbol</th>
+                                <th>Side</th>
+                                <th>Type</th>
+                                <th>Quantity</th>
+                                <th>Price</th>
+                                <th>Filled</th>
+                                <th>Total Value</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ordersTableBody">
+                            <tr>
+                                <td colspan="11" class="text-center py-4">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                    <p class="mt-2 text-muted">Loading orders...</p>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Card View -->
+            <div id="cardViewContent" style="display: none;">
+                <div class="p-3">
+                    <div class="row" id="ordersCardContainer">
+                        <!-- Cards will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Order Details Modal -->
+<div class="modal fade" id="orderDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Order Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="orderDetailsContent">
+                <!-- Content will be populated dynamically -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-danger" id="cancelOrderBtn" onclick="cancelOrder()" style="display: none;">
+                    <i class="fas fa-ban me-1"></i>Cancel Order
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Bulk Cancel Confirmation Modal -->
+<div class="modal fade" id="bulkCancelModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title text-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Cancel All Pending Orders
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to cancel all pending orders? This action cannot be undone.</p>
+                <div class="alert alert-warning">
+                    <strong>Warning:</strong> This will cancel <span id="pendingOrdersCount">0</span> pending orders.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" onclick="confirmBulkCancel()">
+                    <i class="fas fa-ban me-1"></i>Cancel All Orders
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let currentOrders = [];
+let selectedOrderId = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadOrdersSummary();
+    loadOrders();
+    
+    // View mode toggle
+    document.querySelectorAll('input[name="viewMode"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            toggleViewMode(this.id === 'cardView');
+        });
+    });
+    
+    // Filter inputs
+    document.getElementById('orderSearch').addEventListener('input', applyFilters);
+    document.getElementById('statusFilter').addEventListener('change', applyFilters);
+    document.getElementById('typeFilter').addEventListener('change', applyFilters);
+    document.getElementById('sideFilter').addEventListener('change', applyFilters);
+    document.getElementById('dateFilter').addEventListener('change', applyFilters);
+});
+
+function loadOrdersSummary() {
+    fetch('/api/orders/summary')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('totalOrders').textContent = data.total_orders || 0;
+            document.getElementById('pendingOrders').textContent = data.pending_orders || 0;
+            document.getElementById('filledOrders').textContent = data.filled_orders || 0;
+            document.getElementById('totalVolume').textContent = formatCurrency(data.total_volume || 0);
+            document.getElementById('pendingOrdersCount').textContent = data.pending_orders || 0;
+        })
+        .catch(error => console.error('Error loading orders summary:', error));
+}
+
+function loadOrders() {
+    fetch('/api/orders')
+        .then(response => response.json())
+        .then(data => {
+            currentOrders = data.orders || [];
+            displayOrders(currentOrders);
+        })
+        .catch(error => {
+            console.error('Error loading orders:', error);
+            document.getElementById('ordersTableBody').innerHTML = 
+                '<tr><td colspan="11" class="text-center text-danger">Error loading orders</td></tr>';
+        });
+}
+
+function displayOrders(orders) {
+    displayOrdersTable(orders);
+    displayOrdersCards(orders);
+}
+
+function displayOrdersTable(orders) {
+    const tbody = document.getElementById('ordersTableBody');
+    if (orders.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="11" class="text-center text-muted">No orders found</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = orders.map(order => {
+        const fillPercentage = order.filled_quantity && order.quantity ? 
+            (order.filled_quantity / order.quantity * 100) : 0;
+        
+        return `
+            <tr>
+                <td>
+                    <span class="font-monospace small">${order.order_id || order.id}</span>
+                </td>
+                <td>
+                    <div class="d-flex align-items-center">
+                        <i class="fab fa-bitcoin text-warning me-2"></i>
+                        <strong>${order.symbol}</strong>
+                    </div>
+                </td>
+                <td>
+                    <span class="badge bg-${order.side === 'BUY' ? 'success' : 'danger'}">
+                        ${order.side}
+                    </span>
+                </td>
+                <td>
+                    <span class="badge bg-info">${order.order_type}</span>
+                </td>
+                <td>${formatNumber(order.quantity, 6)}</td>
+                <td>${order.price ? '$' + formatNumber(order.price, 6) : 'Market'}</td>
+                <td>
+                    <div>
+                        ${formatNumber(order.filled_quantity || 0, 6)}
+                        ${fillPercentage > 0 ? `<br><small class="text-muted">(${formatNumber(fillPercentage, 1)}%)</small>` : ''}
+                    </div>
+                </td>
+                <td>$${formatNumber(order.total_value || 0, 2)}</td>
+                <td>
+                    <span class="badge bg-${getOrderStatusColor(order.status)}">
+                        ${order.status}
+                    </span>
+                </td>
+                <td>
+                    <small>
+                        ${formatDateTime(order.created_at)}
+                        ${order.updated_at !== order.created_at ? `<br>Updated: ${formatDateTime(order.updated_at)}` : ''}
+                    </small>
+                </td>
+                <td>
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-primary" onclick="showOrderDetails('${order.id}')" title="Details">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        ${order.status === 'PENDING' ? `
+                            <button class="btn btn-outline-danger" onclick="confirmCancelOrder('${order.id}')" title="Cancel">
+                                <i class="fas fa-ban"></i>
+                            </button>
+                        ` : ''}
+                    </div>
+                </td>
+            </tr>
+        `;
+    }).join('');
+}
+
+function displayOrdersCards(orders) {
+    const container = document.getElementById('ordersCardContainer');
+    if (orders.length === 0) {
+        container.innerHTML = '<div class="col-12 text-center text-muted">No orders found</div>';
+        return;
+    }
+    
+    container.innerHTML = orders.map(order => {
+        const fillPercentage = order.filled_quantity && order.quantity ? 
+            (order.filled_quantity / order.quantity * 100) : 0;
+        
+        return `
+            <div class="col-lg-4 col-md-6 mb-3">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-header bg-${order.side === 'BUY' ? 'success' : 'danger'} text-white">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <h6 class="mb-0">${order.symbol} ${order.side}</h6>
+                            <span class="badge bg-light text-dark">${order.order_type}</span>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <small class="text-muted">Order ID</small>
+                                <div class="font-monospace small">${order.order_id || order.id}</div>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted">Status</small>
+                                <div>
+                                    <span class="badge bg-${getOrderStatusColor(order.status)}">${order.status}</span>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted">Quantity</small>
+                                <div class="fw-bold">${formatNumber(order.quantity, 6)}</div>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted">Price</small>
+                                <div class="fw-bold">${order.price ? '$' + formatNumber(order.price, 6) : 'Market'}</div>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted">Filled</small>
+                                <div class="fw-bold">
+                                    ${formatNumber(order.filled_quantity || 0, 6)}
+                                    ${fillPercentage > 0 ? `<br><small class="text-muted">(${formatNumber(fillPercentage, 1)}%)</small>` : ''}
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <small class="text-muted">Total Value</small>
+                                <div class="fw-bold">$${formatNumber(order.total_value || 0, 2)}</div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <small class="text-muted">Created</small>
+                            <div class="small">${formatDateTime(order.created_at)}</div>
+                        </div>
+                        
+                        <div class="d-flex justify-content-between">
+                            <button class="btn btn-sm btn-outline-primary" onclick="showOrderDetails('${order.id}')">
+                                <i class="fas fa-eye me-1"></i>Details
+                            </button>
+                            ${order.status === 'PENDING' ? `
+                                <button class="btn btn-sm btn-outline-danger" onclick="confirmCancelOrder('${order.id}')">
+                                    <i class="fas fa-ban me-1"></i>Cancel
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function toggleViewMode(isCardView) {
+    document.getElementById('tableViewContent').style.display = isCardView ? 'none' : 'block';
+    document.getElementById('cardViewContent').style.display = isCardView ? 'block' : 'none';
+}
+
+function getOrderStatusColor(status) {
+    switch(status) {
+        case 'PENDING': return 'warning';
+        case 'FILLED': return 'success';
+        case 'PARTIALLY_FILLED': return 'info';
+        case 'CANCELLED': return 'secondary';
+        case 'REJECTED': return 'danger';
+        default: return 'secondary';
+    }
+}
+
+function showOrderDetails(orderId) {
+    const order = currentOrders.find(o => o.id === orderId);
+    if (!order) return;
+    
+    const fillPercentage = order.filled_quantity && order.quantity ? 
+        (order.filled_quantity / order.quantity * 100) : 0;
+    
+    const content = `
+        <div class="row g-3">
+            <div class="col-md-6">
+                <h6>Order Information</h6>
+                <table class="table table-sm">
+                    <tr><td>Order ID:</td><td class="font-monospace">${order.order_id || order.id}</td></tr>
+                    <tr><td>Symbol:</td><td><strong>${order.symbol}</strong></td></tr>
+                    <tr><td>Side:</td><td><span class="badge bg-${order.side === 'BUY' ? 'success' : 'danger'}">${order.side}</span></td></tr>
+                    <tr><td>Type:</td><td><span class="badge bg-info">${order.order_type}</span></td></tr>
+                    <tr><td>Status:</td><td><span class="badge bg-${getOrderStatusColor(order.status)}">${order.status}</span></td></tr>
+                </table>
+            </div>
+            <div class="col-md-6">
+                <h6>Execution Details</h6>
+                <table class="table table-sm">
+                    <tr><td>Quantity:</td><td>${formatNumber(order.quantity, 6)}</td></tr>
+                    <tr><td>Price:</td><td>${order.price ? '$' + formatNumber(order.price, 6) : 'Market Price'}</td></tr>
+                    <tr><td>Filled Quantity:</td><td>${formatNumber(order.filled_quantity || 0, 6)}</td></tr>
+                    <tr><td>Fill Percentage:</td><td>${formatNumber(fillPercentage, 2)}%</td></tr>
+                    <tr><td>Total Value:</td><td>$${formatNumber(order.total_value || 0, 2)}</td></tr>
+                </table>
+            </div>
+            <div class="col-12">
+                <h6>Timestamps</h6>
+                <table class="table table-sm">
+                    <tr><td>Created:</td><td>${formatDateTime(order.created_at)}</td></tr>
+                    <tr><td>Updated:</td><td>${formatDateTime(order.updated_at)}</td></tr>
+                    ${order.filled_at ? `<tr><td>Filled:</td><td>${formatDateTime(order.filled_at)}</td></tr>` : ''}
+                    ${order.cancelled_at ? `<tr><td>Cancelled:</td><td>${formatDateTime(order.cancelled_at)}</td></tr>` : ''}
+                </table>
+            </div>
+            ${order.take_profit || order.stop_loss ? `
+                <div class="col-12">
+                    <h6>Risk Management</h6>
+                    <table class="table table-sm">
+                        ${order.take_profit ? `<tr><td>Take Profit:</td><td>$${formatNumber(order.take_profit, 6)}</td></tr>` : ''}
+                        ${order.stop_loss ? `<tr><td>Stop Loss:</td><td>$${formatNumber(order.stop_loss, 6)}</td></tr>` : ''}
+                    </table>
+                </div>
+            ` : ''}
+        </div>
+    `;
+    
+    document.getElementById('orderDetailsContent').innerHTML = content;
+    document.getElementById('cancelOrderBtn').style.display = order.status === 'PENDING' ? 'block' : 'none';
+    selectedOrderId = orderId;
+    
+    new bootstrap.Modal(document.getElementById('orderDetailsModal')).show();
+}
+
+function confirmCancelOrder(orderId) {
+    selectedOrderId = orderId;
+    const order = currentOrders.find(o => o.id === orderId);
+    if (!order) return;
+    
+    if (confirm(`Are you sure you want to cancel the ${order.side} order for ${order.symbol}?`)) {
+        cancelOrder(orderId);
+    }
+}
+
+function cancelOrder(orderId = null) {
+    const orderIdToCancel = orderId || selectedOrderId;
+    if (!orderIdToCancel) return;
+    
+    fetch(`/api/orders/${orderIdToCancel}/cancel`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert('Order cancelled successfully', 'success');
+            if (document.getElementById('orderDetailsModal')) {
+                bootstrap.Modal.getInstance(document.getElementById('orderDetailsModal'))?.hide();
+            }
+            loadOrders();
+            loadOrdersSummary();
+        } else {
+            showAlert(data.message || 'Error cancelling order', 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error cancelling order:', error);
+        showAlert('Error cancelling order', 'danger');
+    });
+}
+
+function cancelAllPending() {
+    new bootstrap.Modal(document.getElementById('bulkCancelModal')).show();
+}
+
+function confirmBulkCancel() {
+    fetch('/api/orders/cancel-all-pending', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showAlert(`Cancelled ${data.cancelled_count} orders successfully`, 'success');
+            bootstrap.Modal.getInstance(document.getElementById('bulkCancelModal')).hide();
+            loadOrders();
+            loadOrdersSummary();
+        } else {
+            showAlert(data.message || 'Error cancelling orders', 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Error cancelling orders:', error);
+        showAlert('Error cancelling orders', 'danger');
+    });
+}
+
+function applyFilters() {
+    const search = document.getElementById('orderSearch').value.toLowerCase();
+    const status = document.getElementById('statusFilter').value;
+    const type = document.getElementById('typeFilter').value;
+    const side = document.getElementById('sideFilter').value;
+    const dateRange = document.getElementById('dateFilter').value;
+    
+    let filteredOrders = currentOrders.filter(order => {
+        // Search filter
+        const matchesSearch = order.symbol.toLowerCase().includes(search) || 
+                             (order.order_id || order.id).toString().toLowerCase().includes(search);
+        
+        // Status filter
+        const matchesStatus = !status || order.status === status;
+        
+        // Type filter
+        const matchesType = !type || order.order_type === type;
+        
+        // Side filter
+        const matchesSide = !side || order.side === side;
+        
+        // Date filter
+        const matchesDate = !dateRange || isInDateRange(order.created_at, dateRange);
+        
+        return matchesSearch && matchesStatus && matchesType && matchesSide && matchesDate;
+    });
+    
+    displayOrders(filteredOrders);
+}
+
+function clearFilters() {
+    document.getElementById('orderSearch').value = '';
+    document.getElementById('statusFilter').value = '';
+    document.getElementById('typeFilter').value = '';
+    document.getElementById('sideFilter').value = '';
+    document.getElementById('dateFilter').value = '';
+    displayOrders(currentOrders);
+}
+
+function refreshOrders() {
+    loadOrdersSummary();
+    loadOrders();
+}
+
+function exportOrders() {
+    window.open('/api/orders/export', '_blank');
+}
+
+function isInDateRange(dateStr, range) {
+    const date = new Date(dateStr);
+    const now = new Date();
+    
+    switch(range) {
+        case 'today':
+            return date.toDateString() === now.toDateString();
+        case 'week':
+            const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            return date >= weekAgo;
+        case 'month':
+            const monthAgo = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+            return date >= monthAgo;
+        default:
+            return true;
+    }
+}
+
+function formatDateTime(dateStr) {
+    return new Date(dateStr).toLocaleString();
+}
+</script>
+{% endblock %} 
