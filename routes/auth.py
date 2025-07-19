@@ -188,4 +188,179 @@ def calculate_password_strength(password):
     char_types = sum([has_lower, has_upper, has_digit, has_special])
     score += char_types * 15  # 15 points per character type
     
-    return min(score, 100) 
+    return min(score, 100)
+
+# API Endpoints for profile management
+@auth_bp.route('/api/auth/user-stats')
+@login_required
+def user_stats():
+    """Get user trading statistics"""
+    try:
+        from models import Trade, Position
+        
+        # Get user's trades and positions
+        trades = Trade.query.filter_by(user_id=current_user.id).all()
+        closed_positions = Position.query.filter_by(status='CLOSED').all()
+        
+        total_trades = len(trades)
+        winning_trades = len([trade for trade in trades if (trade.realized_pnl or 0) > 0])
+        win_rate = (winning_trades / total_trades * 100) if total_trades > 0 else 0
+        total_pnl = sum(trade.realized_pnl or 0 for trade in trades)
+        
+        return jsonify({
+            'success': True,
+            'stats': {
+                'total_trades': total_trades,
+                'winning_trades': winning_trades,
+                'win_rate': win_rate,
+                'total_pnl': total_pnl
+            }
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+@auth_bp.route('/api/auth/update-profile', methods=['POST'])
+@login_required
+def update_profile():
+    """Update user profile"""
+    try:
+        from models import db
+        
+        data = request.get_json()
+        
+        # Update user fields
+        if 'display_name' in data:
+            current_user.display_name = data['display_name']
+        if 'email' in data:
+            current_user.email = data['email']
+        if 'timezone' in data:
+            current_user.timezone = data['timezone']
+        if 'language' in data:
+            current_user.language = data['language']
+        if 'currency' in data:
+            current_user.currency = data['currency']
+        
+        # Update trading preferences (could be stored in user preferences table)
+        current_user.preferences = current_user.preferences or {}
+        if 'default_trade_amount' in data:
+            current_user.preferences['default_trade_amount'] = data['default_trade_amount']
+        if 'risk_level' in data:
+            current_user.preferences['risk_level'] = data['risk_level']
+        if 'enable_auto_trading' in data:
+            current_user.preferences['enable_auto_trading'] = data['enable_auto_trading']
+        if 'default_take_profit' in data:
+            current_user.preferences['default_take_profit'] = data['default_take_profit']
+        if 'default_stop_loss' in data:
+            current_user.preferences['default_stop_loss'] = data['default_stop_loss']
+        if 'enable_notifications' in data:
+            current_user.preferences['enable_notifications'] = data['enable_notifications']
+        
+        db.session.commit()
+        
+        return jsonify({'success': True, 'message': 'Profile updated successfully'})
+    except Exception as e:
+        from models import db
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)})
+
+@auth_bp.route('/api/auth/update-preference', methods=['POST'])
+@login_required
+def update_preference():
+    """Update a single user preference"""
+    try:
+        from models import db
+        
+        data = request.get_json()
+        current_user.preferences = current_user.preferences or {}
+        
+        # Update the specific preference
+        for key, value in data.items():
+            current_user.preferences[key] = value
+        
+        db.session.commit()
+        
+        return jsonify({'success': True})
+    except Exception as e:
+        from models import db
+        db.session.rollback()
+        return jsonify({'success': False, 'message': str(e)})
+
+@auth_bp.route('/api/auth/activity-log')
+@login_required
+def activity_log():
+    """Get user activity log"""
+    try:
+        from models import SystemLog
+        
+        # Get recent user activities (could be improved with user-specific logging)
+        activities = SystemLog.query.filter_by(
+            category='USER'
+        ).order_by(SystemLog.timestamp.desc()).limit(50).all()
+        
+        activity_data = []
+        for activity in activities:
+            activity_data.append({
+                'timestamp': activity.timestamp.isoformat(),
+                'action': activity.level,
+                'details': activity.message,
+                'ip_address': 'N/A'  # Would need to be stored separately
+            })
+        
+        return jsonify({
+            'success': True,
+            'activities': activity_data
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)})
+
+@auth_bp.route('/api/auth/export-user-data')
+@login_required
+def export_user_data():
+    """Export user's data"""
+    try:
+        import json
+        from flask import make_response
+        from models import Trade, Position, Order
+        
+        # Collect user data
+        user_data = {
+            'profile': {
+                'username': current_user.username,
+                'email': current_user.email,
+                'created_at': current_user.created_at.isoformat() if current_user.created_at else None,
+                'preferences': current_user.preferences
+            },
+            'trades': [
+                {
+                    'id': trade.id,
+                    'symbol': trade.symbol,
+                    'quantity': trade.quantity,
+                    'entry_price': trade.entry_price,
+                    'exit_price': trade.exit_price,
+                    'realized_pnl': trade.realized_pnl,
+                    'entry_date': trade.entry_date.isoformat() if trade.entry_date else None,
+                    'exit_date': trade.exit_date.isoformat() if trade.exit_date else None
+                }
+                for trade in Trade.query.filter_by(user_id=current_user.id).all()
+            ],
+            'positions': [
+                {
+                    'id': pos.id,
+                    'symbol': pos.symbol,
+                    'quantity': pos.quantity,
+                    'entry_price': pos.entry_price,
+                    'current_price': pos.current_price,
+                    'status': pos.status,
+                    'created_at': pos.created_at.isoformat() if pos.created_at else None
+                }
+                for pos in Position.query.all()
+            ]
+        }
+        
+        response = make_response(json.dumps(user_data, indent=2))
+        response.headers['Content-Type'] = 'application/json'
+        response.headers['Content-Disposition'] = 'attachment; filename=user_data.json'
+        
+        return response
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}) 
