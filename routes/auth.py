@@ -100,7 +100,7 @@ def profile():
 
 @auth_bp.route('/update-profile', methods=['POST'])
 @login_required
-def update_profile():
+def update_profile_form():
     """Update user profile information"""
     email = request.form.get('email', '').strip()
     
@@ -221,7 +221,7 @@ def user_stats():
 
 @auth_bp.route('/api/auth/update-profile', methods=['POST'])
 @login_required
-def update_profile():
+def update_profile_api():
     """Update user profile"""
     try:
         from models import db
